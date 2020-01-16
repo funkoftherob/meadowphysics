@@ -1,345 +1,154 @@
--- meadowphysics
--- midi out capability
--- engine PolyPerc
 --
--- key2  toggle scale mode^
--- key3  save meadowphysics
--- key3^ save scales
--- enc1  volume
--- enc2  root note
--- enc3  bpm
+--   m e a d o w p h y s i c s
+--
+--   a grid-enabled
+--   rhizomatic
+--   cascading counter
+--
+--
+--   *----
+--        *-----
+--            *---
+--      *-----
+--
 --
 
-engine.name = "PolyPerc"
-
-local hs = include("awake/lib/halfsecond")
-local MeadowPhysics = require "meadowphysics/lib/mp"
-local GridScales = require "meadowphysics/lib/gridscales"
-local MusicUtil = require "musicutil"
-local BeatClock = require "beatclock"
-
-local active
-local grid_clk
-local screen_clk
-local mp
-local data_dir = "/home/we/dust/code/meadowphysics/data/"
-local shift = 0
-local gridscales
+local Beatclock = require "beatclock"
+local clk = Beatclock.new()
+local meadowphysics = include("meadowphysics/lib/engine/core")()
 local g = grid.connect()
-local midi_out_device
-local midi_out_channel
-local clk = BeatClock.new()
-local notes = {}
 
-local options = {
-  OUTPUT = {
-    "audio",
-    "midi",
-    "audio + midi"
-  },
-  STEP_LENGTH_NAMES = {
-    "1 bar",
-    "1/2",
-    "1/3",
-    "1/4",
-    "1/6",
-    "1/8",
-    "1/12",
-    "1/16",
-    "1/24",
-    "1/32",
-    "1/48",
-    "1/64"
-  },
-  STEP_LENGTH_DIVIDERS = {
-    1,
-    2,
-    3,
-    4,
-    6,
-    8,
-    12,
-    16,
-    24,
-    32,
-    48,
-    64
-  }
-}
+local Ack = include("ack/lib/ack")
+engine.name = 'Ack'
 
-local clk_midi = midi.connect()
-clk_midi.event = function(data)
+
+local scale_names = {}
+notes = {}
+local active_notes = {}
+
+local m = midi.connect()
+m.event = function(data)
   clk:process_midi(data)
 end
 
-local notes_off_metro = metro.init()
-
 local function all_notes_off()
-  if (params:get("output") == 2 or params:get("output") == 3) then
-    for _, a in pairs(active_notes) do
-      midi_out_device:note_off(a, nil, midi_out_channel)
-    end
-  end
-  active_notes = {}
-end
-
-local function step()
-  all_notes_off()
-  mp:clock()
-
-  for _, n in pairs(notes) do
-    local f = MusicUtil.note_num_to_freq(n)
-    if (params:get("output") == 1 or params:get("output") == 3) then
-      engine.hz(f)
-    end
-
-    if (params:get("output") == 2 or params:get("output") == 3) then
-      midi_out_device:note_on(n, 96, midi_out_channel)
-      table.insert(active_notes, n)
-    end
-  end
-  notes = {} --why?
-
-  if params:get("note_length") < 4 then
-    notes_off_metro:start((60 / clk.bpm / clk.steps_per_beat / 4) *
-    params:get("note_length"), 1)
+  for i = 1, 8 do
+    m:note_off(params:get("voice_" .. i .. "__midi_note"), 100, params:get("midi_out_channel"))
   end
 end
 
-local function stop()
-  all_notes_off()
+function handle_bang(e) -- Sound making thing goes here!
+  if e.type == 'trigger' then
+    -- print("TRIGGER", e.voice)
+    -- crow.ii.jf.play_note(e.voice/12 - 37/1200,8)
+    engine.trig(e.voice-1)
+    make_note(e.voice)
+    -- trigger midi
+
+  end
+  if e.type == 'gate' and e.value == 1 then
+    -- print("GATE HIGH", e.voice)
+  end
+  if e.type == 'gate' and e.value == 0 then
+    -- print("GATE LOW", e.voice)
+  end
 end
 
-local function reset_pattern()
-  clk:reset()
+function make_note(track)
+    midi_note = params:get("voice_" .. track .. "__midi_note")
+    m:note_on(midi_note, 100, params:get("midi_out_channel"))
 end
 
 function init()
-  setup_params()
 
-  -- meadowphysics
-  mp = MeadowPhysics.loadornew(data_dir .. "mp.data")
-  mp.mp_event = event
+  crow.ii.pullup(true)
+  crow.ii.jf.mode(1)
 
-  -- gridscales
-  gridscales = GridScales.loadornew(data_dir .. "gridscales.data")
-  gridscales:add_params()
+  meadowphysics.init(8)
+  meadowphysics.on_bang = handle_bang
+  meadowphysics.clock = clk
 
-  -- metro
-  grid_clk = metro.init()
-  grid_clk.event = gridredraw
-  grid_clk.time = 1 / 30
+  params:add_separator()
+  params:add_separator()
+  Ack.add_params()
+  for i=1, meadowphysics.voice_count do
+    Ack.add_channel_params(i)
+  end
 
-  screen_clk = metro.init()
-  screen_clk.event = function() redraw() end
-  screen_clk.time = 1 / 15
+  print(engine.list_commands())
 
-  midi_out_device = midi.connect(1)
-  -- midi_out_device.event = function() end
-
-  clk.on_step = step
-  clk.on_stop = stop
-  clk.on_select_internal = function() clk:start() end
-  clk.on_select_external = reset_pattern
-  clk:add_clock_params()
-  params:set("bpm", 120)
-
-  notes_off_metro.event = all_notes_off
-
-  -- grid
-  if g then mp:gridredraw(g) end
-
-  screen_clk:start()
-  grid_clk:start()
+  clk.on_step = function ()
+    all_notes_off()
+    meadowphysics:handle_tick()
+    meadowphysics.should_redraw = true
+    g:all(0)
+  end
+  clk:bpm_change(120)
   clk:start()
 
-  hs.init()
+  -- Test properties
+  -- meadowphysics.voices[1].is_playing = true
+  -- meadowphysics.voices[1].target_voices = {
+  --   meadowphysics.voices[1],
+  --   meadowphysics.voices[2]
+  -- }
+  -- meadowphysics.voices[1].ticks_per_step = 1
+  -- meadowphysics.voices[2].ticks_per_step = 1
+  -- meadowphysics.voices[4].is_playing = true
+  -- meadowphysics.voices[4].target_voices = {
+  --   meadowphysics.voices[4],
+  --   meadowphysics.voices[5]
+  -- }
+  -- meadowphysics.voices[4].ticks_per_step = 2
+  -- meadowphysics.voices[5].ticks_per_step = 2
+  -- meadowphysics.voices[7].is_playing = true
+  -- meadowphysics.voices[7].target_voices = {
+  --   meadowphysics.voices[7],
+  --   meadowphysics.voices[8]
+  -- }
+  -- meadowphysics.voices[7].ticks_per_step = 4
+  -- meadowphysics.voices[8].ticks_per_step = 4
+
+
+
+
+  redraw()
+
 end
 
-function event(row, state)
-  if state == 1 then
-    table.insert(notes, params:get("root_note") + gridscales:note(row))
-  end
+function enc()
+  meadowphysics:handle_enc()
 end
 
-function redraw()
-  if shift == 1 then
-    draw_gridscales()
-  else
-    draw_mp()
-  end
-end
-
-function draw_gridscales()
-  gridscales:redraw()
-end
-
-function draw_mp()
-  screen.clear()
-  screen.aa(0)
-  local offset_x = 24
-  local offset_y = 16
-
-  -- Draw position of each tracker
-  for i = 1, 8 do
-    if mp.position[i] >= 1 then
-      local y = ((i - 1) * 4) + offset_y
-      local x = 0
-      x = ((mp.position[i] - 1) * 4) + offset_x
-      screen.level(8)
-      screen.move(x, y)
-      screen.rect(x, y, 1, 1)
-      screen.fill()
-      screen.stroke()
-    end
-  end
-
-  screen.update()
-end
-
-function draw_bpm()
-  screen.clear()
-  screen.aa(1)
-  screen.move(64, 32)
-  screen.font_size(32)
-  screen.text(params:get("bpm"))
-  screen.stroke()
-  screen.update()
+function key(n,z)
+  meadowphysics:handle_key(n,z)
 end
 
 function g.key(x, y, z)
-  if shift == 1 then
-    gridscales:gridevent(x, y, z)
-  else
-    mp:gridevent(x, y, z)
+  meadowphysics:handle_grid_input(x, y, z)
+end
+
+
+function redraw()
+  screen.clear()
+  meadowphysics:draw()
+  screen.update()
+end
+
+oled_r = metro.init()
+oled_r.time = 0.05 -- 20fps (OLED max)
+oled_r.event = function()
+  redraw()
+  if meadowphysics.should_redraw == true then
+    redraw()
+    meadowphysics.should_redraw = false
   end
 end
+oled_r:start()
 
-function gridredraw()
-  if shift == 1 then
-    gridscales:gridredraw(g)
-  else
-    mp:gridredraw(g)
-  end
+function cleanup ()
+  oled_r:stop()
+  clk:stop()
 end
 
-function enc(n, d)
-  if n == 1 then
-    mix:delta("output", d)
-  elseif n == 2 then
-    params:delta("root_note", d)
-    draw_gridscales()
-  elseif n == 3 then
-    params:delta("bpm", d)
-    draw_bpm()
-  end
-end
 
-function key(n, z)
-  if n == 1 and z == 1 then gridscales:set_scale(8) end
-  if n == 2 and z == 1 then
-    -- shift = shift ~ 1 --@todo this is probably not right
-  elseif n == 3 and z == 1 then
-    if shift == 1 then
-      gridscales:save(data_dir .. "gridscales.data")
-    else
-      mp:save(data_dir .. "mp.data")
-    end
-  end
-end
-
-function setup_params()
-  params:add{
-    type = "option",
-    id = "output",
-    name = "output",
-    options = options.OUTPUT,
-    action = all_notes_off
-  }
-
-  params:add{
-    type = "number",
-    id = "midi_out_device",
-    name = "midi out device",
-    min = 1,
-    max = 4,
-    default = 1,
-    action = function(value) midi_out_device = midi.connect(value) end
-  }
-
-  params:add{
-    type = "number",
-    id = "midi_out_channel",
-    name = "midi out channel",
-    min = 1,
-    max = 16,
-    default = 1,
-    action = function(value)
-      all_notes_off()
-      midi_out_channel = value
-    end
-  }
-
-  params:add_separator()
-
-  params:add{
-    type = "option",
-    id = "step_length",
-    name = "step length",
-    options = options.STEP_LENGTH_NAMES,
-    default = 4,
-    action = function(value)
-      clk.ticks_per_step = 96 / options.STEP_LENGTH_DIVIDERS[value]
-      clk.steps_per_beat = options.STEP_LENGTH_DIVIDERS[value] / 4
-      clk:bpm_change(clk.bpm)
-    end
-  }
-
-  params:add{
-    type = "option",
-    id = "note_length",
-    name = "note length",
-    options = {"25%", "50%", "75%", "100%"},
-    default = 4
-  }
-
-  -- engine
-  params:add{
-    type = "control",
-    id = "amp",
-    controlspec = controlspec.new(0, 1, 'lin', 0, 0.5, ''),
-    action = engine.amp
-  }
-
-  params:add{
-    type = "control",
-    id = "pw",
-    controlspec = controlspec.new(0, 100, 'lin', 0, 50, '%'),
-    action = function(x) engine.pw(x / 100) end
-  }
-
-  params:add{
-    type = "control",
-    id = "release",
-    controlspec = controlspec.new(0.1, 3.2, 'lin', 0, 1.2, 's'),
-    action = engine.release
-  }
-
-  params:add{
-    type = "control",
-    id = "cutoff",
-    controlspec = controlspec.new(50, 5000, 'exp', 0, 555, 'hz'),
-    action = engine.cutoff
-  }
-
-  params:add{
-    type = "control",
-    id = "gain",
-    controlspec = controlspec.new(0, 4, 'lin', 0, 1, ''),
-    action = engine.gain
-  }
-
-  params:default()
-  params:add_separator()
-
-end
