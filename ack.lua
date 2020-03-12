@@ -16,6 +16,7 @@
 local Beatclock = require "beatclock"
 local clk = Beatclock.new()
 local meadowphysics = include("meadowphysics/lib/engine/core")()
+local scale = include("meadowphysics/lib/engine/scale")
 local g = grid.connect()
 
 local Ack = include("ack/lib/ack")
@@ -33,18 +34,15 @@ end
 
 local function all_notes_off()
   for i = 1, 8 do
-    m:note_off(params:get("voice_" .. i .. "__midi_note"), 100, params:get("midi_out_channel"))
+    m:note_off(scale.notes[i], 100, params:get("midi_out_channel"))
   end
 end
 
 function handle_bang(e) -- Sound making thing goes here!
   if e.type == 'trigger' then
-    -- print("TRIGGER", e.voice)
-    -- crow.ii.jf.play_note(e.voice/12 - 37/1200,8)
     engine.trig(e.voice-1)
     make_note(e.voice)
-    -- trigger midi
-
+    crow.ii.jf.play_note((e.voice-60)/12,5)
   end
   if e.type == 'gate' and e.value == 1 then
     -- print("GATE HIGH", e.voice)
@@ -55,15 +53,18 @@ function handle_bang(e) -- Sound making thing goes here!
 end
 
 function make_note(track)
-    midi_note = params:get("voice_" .. track .. "__midi_note")
-    m:note_on(midi_note, 100, params:get("midi_out_channel"))
+    m:note_on(scale.notes[track], 100, params:get("midi_out_channel"))
 end
+
 
 function init()
 
   crow.ii.pullup(true)
   crow.ii.jf.mode(1)
 
+  scale:make_params()
+
+  -- meadowphysics.init(16)
   meadowphysics.init(8)
   meadowphysics.on_bang = handle_bang
   meadowphysics.clock = clk
@@ -75,8 +76,6 @@ function init()
     Ack.add_channel_params(i)
   end
 
-  print(engine.list_commands())
-
   clk.on_step = function ()
     all_notes_off()
     meadowphysics:handle_tick()
@@ -85,33 +84,6 @@ function init()
   end
   clk:bpm_change(120)
   clk:start()
-
-  -- Test properties
-  -- meadowphysics.voices[1].is_playing = true
-  -- meadowphysics.voices[1].target_voices = {
-  --   meadowphysics.voices[1],
-  --   meadowphysics.voices[2]
-  -- }
-  -- meadowphysics.voices[1].ticks_per_step = 1
-  -- meadowphysics.voices[2].ticks_per_step = 1
-  -- meadowphysics.voices[4].is_playing = true
-  -- meadowphysics.voices[4].target_voices = {
-  --   meadowphysics.voices[4],
-  --   meadowphysics.voices[5]
-  -- }
-  -- meadowphysics.voices[4].ticks_per_step = 2
-  -- meadowphysics.voices[5].ticks_per_step = 2
-  -- meadowphysics.voices[7].is_playing = true
-  -- meadowphysics.voices[7].target_voices = {
-  --   meadowphysics.voices[7],
-  --   meadowphysics.voices[8]
-  -- }
-  -- meadowphysics.voices[7].ticks_per_step = 4
-  -- meadowphysics.voices[8].ticks_per_step = 4
-
-
-
-
   redraw()
 
 end
@@ -134,6 +106,14 @@ function redraw()
   meadowphysics:draw()
   screen.update()
 end
+
+
+function gridredraw()
+  meadowphysics:gridredraw()
+end
+
+gridredrawtimer = metro.init(function() gridredraw() end, 0.02, -1)
+gridredrawtimer:start()
 
 oled_r = metro.init()
 oled_r.time = 0.05 -- 20fps (OLED max)
