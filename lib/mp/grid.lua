@@ -3,6 +3,7 @@
 local g = grid.connect()
 local grid = {}
 local glyphs = {}
+local voice_count = 8
 
 local rule_icons = {
   {0,0,0,0,0,0,0,0},-- o
@@ -33,24 +34,29 @@ function grid:draw(mp)
     -- Show status of all voices
     for i = 1, #mp.voices do
       voice = mp.voices[i]
-      if (voice.bang_type == "trigger") then
-       g:led(6, i,  4)
-      end
-      if (voice.bang_type == "gate") then
-       g:led(7, i,  4)
+      if (params:get(i.."_type") == 1) then
+        g:led(6, i,  4)
+      else
+        g:led(7, i,  4)
       end
       if (voice.is_playing) then
         g:led(3, i,  4)
       end
-       -- speed (clock division)
-      g:led(8 + voice.ticks_per_step, i,  4)
+      g:led(8 + params:get(i.."_clock_division_high"), i,  4)
+      for div_i = params:get(i.."_clock_division_low"), params:get(i.."_clock_division_high") do 
+        g:led(div_i+8, i,  2)
+      end
+      g:led(8 + voice.current_clock_division, i,  4)
     end
     -- Light up the focused voice
     g:led(1, mp.grid_target_focus,  4)
     -- Show all the voices targeted by this voice
-    for ti = 1, #mp.voices[mp.grid_target_focus].target_voices do
-      if mp.voices[mp.grid_target_focus].target_voices[ti] == true then
+    for ti = 1, voice_count do
+      if (params:get(mp.grid_target_focus .. "_reset_" .. ti) == 2) then
         g:led(4, ti,  4)
+      end
+      if params:get(ti .. "_running") == 2 then
+        g:led(3, ti,  4)
       end
     end
   end
@@ -59,11 +65,11 @@ function grid:draw(mp)
 	  for i = 1, #mp.voices do
 	    local voice = mp.voices[i]
       -- show cycle range
-      for ci = voice.min_cycle_length, voice.max_cycle_length do
+      for ci = voice.get("range_low"), voice.get("range_high") do 
         g:led(ci, i,  2)
       end
       -- show playhead
-      if voice.is_playing then
+      if voice.isRunning() then
   	    g:led(voice.current_step, i,  4)
       end
 	  end
@@ -71,7 +77,7 @@ function grid:draw(mp)
 
   if (mp.grid_mode == "rule") then
     base_lighting(mp)
-    local rule = mp.voices[mp.grid_target_focus].rule
+    local rule = params:get(mp.grid_target_focus .. "_rule")
     -- Draw the rule glyph
     local glyph = glyphs[rule]
     for yi = 1, 8 do
@@ -85,7 +91,7 @@ function grid:draw(mp)
   g:refresh()
 end
 
-glyphs["increment"] = {
+glyphs[1] = {
   {0,0,0,0,0,0,0,0},
   {0,0,0,1,1,0,0,0},
   {0,0,0,1,1,0,0,0},
@@ -96,7 +102,7 @@ glyphs["increment"] = {
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["decrement"] ={
+glyphs[2] ={
   {0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0},
@@ -107,7 +113,7 @@ glyphs["decrement"] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["min"] ={
+glyphs[3] ={
   {0,0,0,0,0,0,0,0},
   {0,0,0,0,0,1,1,0},
   {0,0,0,0,0,1,1,0},
@@ -118,7 +124,7 @@ glyphs["min"] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["max"] ={
+glyphs[4] ={
   {0,0,0,0,0,0,0,0},
   {0,1,1,0,0,0,0,0},
   {0,1,1,0,0,0,0,0},
@@ -129,7 +135,7 @@ glyphs["max"] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["random"] ={
+glyphs[5] ={
   {0,0,0,0,0,0,0,0},
   {0,1,1,0,0,1,1,0},
   {0,1,1,0,0,1,1,0},
@@ -140,7 +146,7 @@ glyphs["random"] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["pole"] ={
+glyphs[6] ={
   {0,0,0,0,0,0,0,0},
   {0,0,0,1,1,1,1,0},
   {0,0,0,1,1,1,1,0},
@@ -151,7 +157,7 @@ glyphs["pole"] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs["stop"] ={
+glyphs[7] ={
   {0,0,0,0,0,0,0,0},
   {0,1,1,1,1,1,1,0},
   {0,1,1,1,1,1,1,0},

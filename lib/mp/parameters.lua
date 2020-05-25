@@ -1,17 +1,11 @@
 setup_params = function(mp)
 
   -- Voices
-
-  params:add{
-    type = "number",
-    id = ("tempo"),
-    name = ("tempo"),
-    min = 60,
-    max = 240,
-    default = 120,
-    action = function(value)
-      mp.clock:bpm_change(value)
-    end
+  params:add {
+    type = "option",
+    id = "output",
+    name = "output",
+    options = {"audio", "midi", "audio + midi"}
   }
 
   params:add{
@@ -36,6 +30,14 @@ setup_params = function(mp)
     end
   }
 
+  params:add {
+    type = "option",
+    id = "clock_division",
+    name = "clock division",
+    options = {"1/4", "1/8", "1/12", "1/16"}
+  }
+
+  params:add_separator()
 
 end
 
