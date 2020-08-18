@@ -36,12 +36,25 @@ local function Meadowphysics ()
         
         -- If the voice type is a trigger
         if params:get(i .. "_type") == 1 then
+
           if (params:get('output') == 1 or params:get('output') == 3) then
             trigger(note_num, hz, i) -- global defined by main script
           end
           if (params:get('output') == 2 or params:get('output') == 3) then
             midi_note_on(i)
           end
+
+          if params:get('output') == 5 then
+            crow.ii.jf.play_note((note_num-60) / 12, 5 )
+          end
+
+          if params:get('output') == 6 then
+            print("trigger", voice.index)
+            -- crow.ii.jf.play_note((note_num-60) / 12,1)
+            -- crow.ii.jf.play_voice( voice.index-1, (note_num-60) / 12, 5 )
+            crow.ii.jf.vtrigger( voice.index, 8)
+          end
+
         end
         
         -- If the voice type is a gate
@@ -86,7 +99,7 @@ local function Meadowphysics ()
 
   notes = {}
 
-  function midi_notes_off()
+  function mp.all_notes_off()
     for i = 1, mp.voice_count do
       if (params:get(i.."_type") == 1) then midi_note_off(i) end
     end
@@ -96,18 +109,37 @@ local function Meadowphysics ()
     while true do
       clock.sync(1/(params:get("clock_division")*4))
       if (params:get('output') == 2 or params:get('output') == 3 and false) then
-        midi_notes_off()
+        mp.all_notes_off()
       end
       mp.handle_tick()
     end
   end
 
+
+  -- Clock Loop
   function mp:handle_tick()
+
+    -- triggers
     for i=1,mp.voice_count do
-      voices[i].tick()
+      if voices[i].current_tick == voices[1].current_clock_division and voices[i].current_step == 1  then
+        voices[i].bang()
+      end
     end
+
+    -- resets
+    for i=1,mp.voice_count do
+      voices[i].apply_resets()
+    end
+
+    for i=1,mp.voice_count do
+      voices[i].current_tick = voices[i].current_tick+1
+    end
+
     mp:gridredraw()
   end
+
+
+
 
   function mp:handle_key (n, z)
 
@@ -151,7 +183,7 @@ local function Meadowphysics ()
         mp.voices[y].toggle_playback()
       end
 
-      if (x == 4) then -- this is buggy!
+      if (x == 4) then
         mp.voices[mp.grid_target_focus].toggle_target(y)
       end
 
@@ -204,8 +236,10 @@ local function Meadowphysics ()
         params:set(y .. "_range_high", pressed_keys[#pressed_keys])
       end
       if (#pressed_keys == 1) then -- Single press in pattern mode
-        voices[y].bang()
-        voices[y].just_triggered = true
+        if params:get("instant_trigger") == 2 then
+          -- do instant event
+          voices[y].bang()
+        end
         voices[y].current_step = x
         voices[y].current_tick = 0
         voices[y].current_cycle_length = x

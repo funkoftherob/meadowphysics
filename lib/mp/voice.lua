@@ -108,10 +108,7 @@ create_voice = function(i, mp)
     end
   end
 
-  v.tick = function()
-    -- Clock hits this function for every tick, the clock multiplication affects the amount of ticks
-    -- per step, when current_tick hits 0, the current step will step down towards zero.
-    -- when it hits zero it resets to a step value determined by it's rule, and emits a bang
+  v.apply_resets = function()
 
     if not v.isRunning() then return end
 
@@ -121,24 +118,24 @@ create_voice = function(i, mp)
       v.current_step = v.current_step - 1
     end
 
-    if v.current_step == 0 then set("running", 1) end
-
-
+    -- if v.current_tick == 0 and v.current_step == 0 then
     if v.current_tick == 0 and v.current_step == 0 then
+      set("running", 1)
+
       for i=1, mp.voice_count do
+        local voice = mp.voices[i]
         if get("reset_" .. i) == 2 then
-          local voice = mp.voices[i]
-          voice.bang()
-          voice.just_triggered = true
-          voice.current_tick = 0
-          voice.apply_rule(rules[get("rule")])
           voice.current_step = voice.current_cycle_length
+          voice.set("running", 2)
+          voice.current_tick = 0
+          voice.apply_rule(rules[voice.get("rule")])
+          if params:get("trigger_on_reset") == 2 and not (voice.index == v.index) then
+            voice.bang() 
+          end 
         end
       end
 
     end
-
-    v.current_tick = v.current_tick + 1
 
   end
 
@@ -209,7 +206,6 @@ create_voice = function(i, mp)
     end
     if rule == "random" then
       local delta = get("range_high") - get("range_low")
-      print(delta)
       if delta > 0 then v.current_cycle_length = get("range_low")-1 + math.random(delta+1) end
       local div_delta = get("clock_division_high") - get("clock_division_low")
       if div_delta > 0 then v.current_clock_division = get("clock_division_low")-1 + math.random(div_delta+1) end
