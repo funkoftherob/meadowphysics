@@ -87,7 +87,14 @@ function grid:draw(mp)
         end
       end
     end
-  end
+    -- Draw an indicator
+    g:led(5,5,3)
+    g:led(6,5,3)
+    g:led(7,5,3)
+    -- show rule target mode
+    local rule_mode = params:get(mp.grid_target_focus .. "_rule_target") 
+    g:led(4 + rule_mode,5, 8)
+end
   g:refresh()
 end
 

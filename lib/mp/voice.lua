@@ -14,7 +14,7 @@ create_voice = function(i, mp)
   local bool = {"no", "yes"}
   local rules = {"increment", "decrement", "max", "min", "random", "pole", "stop"}
 
-  params:add_group("Voice " .. i, 7 + mp.voice_count)
+  params:add_group("Voice " .. i, 8 + mp.voice_count)
 
   params:add {
     type = "option",
@@ -52,7 +52,7 @@ create_voice = function(i, mp)
     default = 1,
   }
   
-    params:add{
+  params:add {
     type = "number",
     id = i .. "_clock_division_high",
     name = "clock div high",
@@ -73,6 +73,13 @@ create_voice = function(i, mp)
     id = i .. "_rule",
     name = "rule",
     options = rules
+  }
+
+  params:add {
+    type = "option",
+    id = i .. "_rule_target",
+    name = "rule target",
+    options = {"position", "speed", "position+speed"}
   }
 
   for reset_i=1, mp.voice_count do
