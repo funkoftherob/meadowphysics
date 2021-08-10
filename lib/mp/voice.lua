@@ -137,7 +137,7 @@ create_voice = function(i, mp)
           voice.current_tick = 0
           voice.apply_rule(rules[voice.get("rule")])
           if params:get("trigger_on_reset") == 2 and not (voice.index == v.index) then
-            voice.bang() 
+            voice.bang()
           end 
         end
       end
@@ -183,14 +183,19 @@ create_voice = function(i, mp)
   end
  
   v.apply_rule = function(rule)
+    local rt = get("rule_target")
     if rule == "increment" then
-      v.current_cycle_length = v.current_cycle_length + 1
-      if v.current_cycle_length > get("range_high") then
-        v.current_cycle_length = get("range_low")
+      if rt ~= 2 then
+	v.current_cycle_length = v.current_cycle_length + 1
+	if v.current_cycle_length > get("range_high") then
+	  v.current_cycle_length = get("range_low")
+	end
       end
-      v.current_clock_division = v.current_clock_division + 1
-      if v.current_clock_division > get("clock_division_high") then
-        v.current_clock_division = get("clock_division_low")
+      if rt ~= 1 then
+	v.current_clock_division = v.current_clock_division + 1
+	if v.current_clock_division > get("clock_division_high") then
+	  v.current_clock_division = get("clock_division_low")
+	end
       end
     end
     if rule == "decrement" then
