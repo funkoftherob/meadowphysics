@@ -29,7 +29,7 @@ local function Meadowphysics ()
       local voice = voices[i]
 
       voice.on_bang = function ()
-        
+
         -- Generate note/hz
         local note_num = scale.notes[mp.voice_count + 1 - i]
         local hz = MusicUtil.note_num_to_freq(note_num)
@@ -49,9 +49,6 @@ local function Meadowphysics ()
           end
 
           if params:get('output') == 6 then
-            print("trigger", voice.index)
-            -- crow.ii.jf.play_note((note_num-60) / 12,1)
-            -- crow.ii.jf.play_voice( voice.index-1, (note_num-60) / 12, 5 )
             crow.ii.jf.vtrigger( voice.index, 8)
           end
 
@@ -121,7 +118,7 @@ local function Meadowphysics ()
 
     -- triggers
     for i=1,mp.voice_count do
-      if voices[i].current_tick == voices[1].current_clock_division and voices[i].current_step == 1  then
+      if voices[i].current_tick == voices[i].current_clock_division and voices[i].current_step == 1  then
         voices[i].bang()
       end
     end
