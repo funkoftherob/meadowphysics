@@ -9,7 +9,7 @@ setup_params = function(mp)
     name = "output",
     options = {
       "audio", "midi", "audio + midi",
-      "crow out (tbc)", "crow JF notes", "crow JF trigs"
+      "crow 1-4 trigs", "just friends notes", "just friends shapes"
     },
     action = function(value)
       mp.all_notes_off()

@@ -61,15 +61,24 @@ local function Meadowphysics ()
         local hz = MusicUtil.note_num_to_freq(note_num)
         -- if the voice type is a trigger
         if params:get(i .. "_type") == 1 then
+
           if (params:get('output') == 1 or params:get('output') == 3) then
             trigger(note_num, hz, i) -- global defined by main script
           end
+
           if (params:get('output') == 2 or params:get('output') == 3) then
             midi_note_on(i)
           end
+
+          if (params:get('output') == 4) then
+            crow.output[util.wrap(i, 1, 4)].volts = 10
+            crow.output[util.wrap(i, 1, 4)].volts = 0
+          end
+
           if params:get('output') == 5 then
             crow.ii.jf.play_note((note_num-60) / 12, 5 )
           end
+
           if params:get('output') == 6 then
             crow.ii.jf.vtrigger( voice.index, 8)
           end
