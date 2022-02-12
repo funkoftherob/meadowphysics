@@ -5,16 +5,16 @@ local grid = {}
 local glyphs = {}
 local voice_count = 8
 
-local rule_icons = {
-  {0,0,0,0,0,0,0,0},-- o
-  {0,24,24,126,126,24,24,0}, -- +
-  {0,0,0,126,126,0,0,0}, -- -
-  {0,96,96,126,126,96,96,0}, -- >
-  {0,6,6,126,126,6,6,0}, -- <
-  {0,102,102,24,24,102,102,0}, -- * rnd
-  {0,120,120,102,102,30,30,0}, -- <> up/down
-  {0,126,126,102,102,126,126,0} -- [] sync2 = 12
-}
+-- local rule_icons = {
+--   {0,0,0,0,0,0,0,0},-- o
+--   {0,24,24,126,126,24,24,0}, -- +
+--   {0,0,0,126,126,0,0,0}, -- -
+--   {0,96,96,126,126,96,96,0}, -- >
+--   {0,6,6,126,126,6,6,0}, -- <
+--   {0,102,102,24,24,102,102,0}, -- * rnd
+--   {0,120,120,102,102,30,30,0}, -- <> up/down
+--   {0,126,126,102,102,126,126,0} -- [] sync2 = 12
+-- }
 
 local function base_lighting(mp)
   for i = 1, #mp.voices do
@@ -29,7 +29,8 @@ end
 
 function grid:draw(mp)
   g:all(0)
-  if(mp.grid_mode == "voice") then
+
+  if(mp.focus == "RESETS") then
     base_lighting(mp)
     -- Show status of all voices
     for i = 1, #mp.voices do
@@ -43,16 +44,16 @@ function grid:draw(mp)
         g:led(3, i,  4)
       end
       g:led(8 + params:get(i.."_clock_division_high"), i,  4)
-      for div_i = params:get(i.."_clock_division_low"), params:get(i.."_clock_division_high") do 
+      for div_i = params:get(i.."_clock_division_low"), params:get(i.."_clock_division_high") do
         g:led(div_i+8, i,  2)
       end
       g:led(8 + voice.current_clock_division, i,  4)
     end
     -- Light up the focused voice
-    g:led(1, mp.grid_target_focus,  4)
+    g:led(1, mp.state.selected_voice,  4)
     -- Show all the voices targeted by this voice
     for ti = 1, voice_count do
-      if (params:get(mp.grid_target_focus .. "_reset_" .. ti) == 2) then
+      if (params:get(mp.state.selected_voice .. "_reset_" .. ti) == 2) then
         g:led(4, ti,  4)
       end
       if params:get(ti .. "_running") == 2 then
@@ -61,7 +62,8 @@ function grid:draw(mp)
     end
   end
 
-  if (mp.grid_mode == "pattern") then
+  -- just show standard ui for the other pages for now
+  if (mp.focus == "HOME" or mp.focus == "ALT" or mp.focus == "CONFIG" or mp.focus == "TIME") then
 	  for i = 1, #mp.voices do
 	    local voice = mp.voices[i]
       -- show cycle range
@@ -75,9 +77,13 @@ function grid:draw(mp)
 	  end
 	end
 
-  if (mp.grid_mode == "rule") then
+  if (mp.focus == "RULES") then
     base_lighting(mp)
-    local rule = params:get(mp.grid_target_focus .. "_rule")
+
+    -- Light up the focused voice
+    g:led(1, mp.state.selected_voice,  4)
+    local rule = params:get(mp.state.selected_voice .. "_rule")
+
     -- Draw the rule glyph
     local glyph = glyphs[rule]
     for yi = 1, 8 do
@@ -87,63 +93,78 @@ function grid:draw(mp)
         end
       end
     end
-    -- Draw an indicator
-    g:led(5,5,3)
-    g:led(6,5,3)
-    g:led(7,5,3)
+
+    -- Draw rule target/application indicator
+    g:led(5,params:get(mp.state.selected_voice .. "_rule_target"),3)
+    g:led(6,params:get(mp.state.selected_voice .. "_rule_target"),3)
+    g:led(7,params:get(mp.state.selected_voice .. "_rule_target"),3)
     -- show rule target mode
-    local rule_mode = params:get(mp.grid_target_focus .. "_rule_target") 
-    g:led(4 + rule_mode,5, 8)
+    local rule_application = params:get(mp.state.selected_voice .. "_rule_application")
+    g:led(4 + rule_application,params:get(mp.state.selected_voice .. "_rule_target"), 8)
+
 end
   g:refresh()
 end
 
 glyphs[1] = {
   {0,0,0,0,0,0,0,0},
-  {0,0,0,1,1,0,0,0},
-  {0,0,0,1,1,0,0,0},
-  {0,1,1,1,1,1,1,0},
-  {0,1,1,1,1,1,1,0},
-  {0,0,0,1,1,0,0,0},
-  {0,0,0,1,1,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs[2] ={
+
+
+glyphs[2] = {
   {0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0},
+  {0,0,0,1,1,0,0,0},
+  {0,0,0,1,1,0,0,0},
   {0,1,1,1,1,1,1,0},
   {0,1,1,1,1,1,1,0},
-  {0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0},
+  {0,0,0,1,1,0,0,0},
+  {0,0,0,1,1,0,0,0},
   {0,0,0,0,0,0,0,0}
 }
 
 glyphs[3] ={
   {0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,1,1,0},
-  {0,0,0,0,0,1,1,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
   {0,1,1,1,1,1,1,0},
   {0,1,1,1,1,1,1,0},
-  {0,0,0,0,0,1,1,0},
-  {0,0,0,0,0,1,1,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0}
 }
 
 glyphs[4] ={
   {0,0,0,0,0,0,0,0},
-  {0,1,1,0,0,0,0,0},
-  {0,1,1,0,0,0,0,0},
+  {0,0,0,0,0,1,1,0},
+  {0,0,0,0,0,1,1,0},
   {0,1,1,1,1,1,1,0},
   {0,1,1,1,1,1,1,0},
-  {0,1,1,0,0,0,0,0},
-  {0,1,1,0,0,0,0,0},
+  {0,0,0,0,0,1,1,0},
+  {0,0,0,0,0,1,1,0},
   {0,0,0,0,0,0,0,0}
 }
 
 glyphs[5] ={
   {0,0,0,0,0,0,0,0},
+  {0,1,1,0,0,0,0,0},
+  {0,1,1,0,0,0,0,0},
+  {0,1,1,1,1,1,1,0},
+  {0,1,1,1,1,1,1,0},
+  {0,1,1,0,0,0,0,0},
+  {0,1,1,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0}
+}
+
+glyphs[6] ={
+  {0,0,0,0,0,0,0,0},
   {0,1,1,0,0,1,1,0},
   {0,1,1,0,0,1,1,0},
   {0,0,0,1,1,0,0,0},
@@ -153,7 +174,7 @@ glyphs[5] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs[6] ={
+glyphs[7] ={
   {0,0,0,0,0,0,0,0},
   {0,0,0,1,1,1,1,0},
   {0,0,0,1,1,1,1,0},
@@ -164,7 +185,7 @@ glyphs[6] ={
   {0,0,0,0,0,0,0,0}
 }
 
-glyphs[7] ={
+glyphs[8] ={
   {0,0,0,0,0,0,0,0},
   {0,1,1,1,1,1,1,0},
   {0,1,1,1,1,1,1,0},
