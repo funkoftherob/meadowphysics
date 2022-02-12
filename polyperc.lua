@@ -14,9 +14,9 @@
 --
 
 local meadowphysics = include("meadowphysics/lib/mp/core")()
-local g = grid.connect()
-local MusicUtil = require "musicutil"
 local hs = include('lib/halfsecond')
+
+g = grid.connect()
 
 engine.name = 'PolyPerc'
 
@@ -81,7 +81,6 @@ end
 
 function init()
   meadowphysics.init()
-  params:add_separator()
   init_engine()
 end
 

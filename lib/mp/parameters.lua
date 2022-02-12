@@ -1,5 +1,7 @@
 setup_params = function(mp)
 
+  params:add_group("MEADOWPHYSICS ", 9)
+
   -- Voices
   params:add {
     type = "option",

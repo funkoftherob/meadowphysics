@@ -35,7 +35,7 @@ end
 function init_engine ()
   Ack.add_params()
   for i=1, meadowphysics.voice_count do
-    Ack.add_channel_params(i)
+    -- Ack.add_channel_params(i)
   end
 end
 
