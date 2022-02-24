@@ -257,6 +257,14 @@ create_voice = function(i, mp)
       end
       return value
     end,
+
+
+    stop = function (value, min, max)
+      print('stoppo')
+      v.toggle_playback()
+      return max
+    end
+
   }
 
   v.apply_rule = function(rule)
