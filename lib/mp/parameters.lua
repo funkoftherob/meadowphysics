@@ -1,6 +1,6 @@
 setup_params = function(mp)
 
-  params:add_group("MEADOWPHYSICS ", 9)
+  params:add_separator()
 
   -- Voices
   params:add {
@@ -58,21 +58,10 @@ setup_params = function(mp)
 
   params:add {
     type = "option",
-    id = "instant_trigger",
+    id = "trigger_on_press",
     name = "trigger on press",
     options = {"no", "yes"}
   }
-
-
-  params:add {
-    type = "option",
-    id = "trigger_on_reset",
-    name = "trigger on reset",
-    options = {"no", "yes"}
-  }
-
-
-  params:add_separator()
 
 end
 

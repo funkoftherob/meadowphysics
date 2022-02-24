@@ -12,7 +12,7 @@ create_voice = function(i, mp)
   local bool = {"no", "yes"}
   local rules = {"none", "increment", "decrement", "max", "min", "random", "pole", "stop"}
 
-  params:add_group("VOICE " .. i, 11 + mp.voice_count)
+  params:add_group("voice " .. i, 11 + mp.voice_count)
 
   local midi_options = {"auto", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
   local note_options = {"auto"}
@@ -167,9 +167,9 @@ create_voice = function(i, mp)
           voice.set("running", 2)
           voice.current_tick = 0
           voice.apply_rule(rules[voice.get("rule")])
-          if params:get("trigger_on_reset") == 2 and not (voice.index == v.index) then
-            voice.bang()
-          end 
+          -- if params:get("trigger_on_reset") == 2 and not (voice.index == v.index) then
+          --   voice.bang()
+          -- end
         end
       end
     end
@@ -245,7 +245,11 @@ create_voice = function(i, mp)
     random = function (value, min, max)
       value = 1
       local delta = max - min
-      if delta > 0 then value = min - 1 + math.random(delta+1) end
+      if delta > 0 then
+        value = min - 1 + math.random(delta+1)
+      else
+        value = min
+      end
       return value
     end,
 
@@ -260,7 +264,6 @@ create_voice = function(i, mp)
 
 
     stop = function (value, min, max)
-      print('stoppo')
       v.toggle_playback()
       return max
     end
