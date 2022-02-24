@@ -36,6 +36,7 @@ end
 
 
 function init_engine ()
+  params:add_separator()
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
   params:add{
     type="control",id="amp",controlspec=cs_AMP,

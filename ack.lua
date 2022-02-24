@@ -33,6 +33,7 @@ function gate_low(note_num, hz, voice)
 end
 
 function init_engine ()
+  params:add_separator()
   Ack.add_params()
   for i=1, meadowphysics.voice_count do
     -- Ack.add_channel_params(i)

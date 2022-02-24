@@ -318,7 +318,9 @@ local function Meadowphysics ()
           params:set(y .. "_range_high", x)
           params:set(y .. "_range_low", x)
           params:set(y .. "_running", 2)
-          voices[y].bang()
+          if params:get("trigger_on_press") == 2 then
+            voices[y].bang()
+          end
         end
       end
     end
