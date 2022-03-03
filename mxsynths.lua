@@ -14,7 +14,7 @@
 --
 
 local meadowphysics = include("meadowphysics/lib/mp/core")()
-local hs = include('lib/halfsecond')
+
 
 g = grid.connect()
 
