@@ -26,15 +26,15 @@ local mxsynths_=include("mx.synths/lib/mx.synths")
 -- voicing
 
 function trigger(note_num, hz, voice)
-  engine.mx_note_on(note_num,1,60)
+  engine.mx_note_on(note_num,1,6)
 end
 
 function gate_high(note_num, hz, voice)
-  engine.mx_note_on(note_num,1,60)
+  engine.mx_note_on(note_num,1,6)
 end
 
 function gate_low(note_num, hz, voice)
-  engine.mx_note_on(note_num,1,60)
+  engine.mx_note_on(note_num,1,6)
 end
 
 
