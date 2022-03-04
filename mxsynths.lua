@@ -20,7 +20,7 @@ g = grid.connect()
 
 engine.name="MxSynths"
 local mxsynths_=include("mx.synths/lib/mx.synths")
-mxsynths=mxsynths_:new()
+
 
 
 -- voicing
@@ -43,6 +43,8 @@ end
 
 function init()
   meadowphysics.init()
+  mxsynths=mxsynths_:new()
+  
 end
 
 function key(n,z)
