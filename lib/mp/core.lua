@@ -67,7 +67,7 @@ local function Meadowphysics ()
           end
 
           if (params:get('output') == 2 or params:get('output') == 3) then
-            midi_note_on(i)
+            midi_note_on(note_num)
           end
 
           if (params:get('output') == 4) then
@@ -90,14 +90,14 @@ local function Meadowphysics ()
               gate_high(note_num, hz, i) -- global defined by main script
             end
             if (params:get('output') == 2 or params:get('output') == 3) then
-              midi_note_on(i)
+              midi_note_on(note_num)
             end
           else
             if (params:get('output') == 1 or params:get('output') == 3) then
               gate_low(note_num, hz, i) -- global defined by main script
             end
             if (params:get('output') == 2 or params:get('output') == 3) then
-              midi_note_off(i)
+              midi_note_off(note_num)
             end
           end
         end
